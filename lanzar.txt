@@ -1,0 +1,41 @@
+PASOS PARA LANZAR EL PROYECTO EN OTRO ORDENADOR
+
+1. INSTALAR DEPENDENCIAS
+------------------------
+Abre una terminal en la carpeta raíz del proyecto y ejecuta:
+
+   cd server
+   npm install
+
+   cd ../client
+   npm install
+
+2. BASE DE DATOS
+----------------
+1. Asegúrate de tener XAMPP (MySQL) corriendo.
+2. Abre phpMyAdmin (http://localhost/phpmyadmin).
+3. Importa el archivo "database.sql" que está dentro de la carpeta "server".
+   (Esto creará la base de datos 'recetas' y las tablas necesarias).
+
+3. LANZAR EL PROYECTO
+---------------------
+Necesitas dos terminales abiertas:
+
+TERMINAL 1 (Servidor):
+   cd server
+   node app.js
+
+TERMINAL 2 (Cliente/React):
+   cd client
+   npm run dev
+
+¡Listo! Abre el enlace que te muestre la terminal del cliente (normalmente http://localhost:5173).
+
+4. CREDENCIALES DE PRUEBA
+-------------------------
+He configurado la base de datos con 3 usuarios de prueba.
+Para todos ellos, la contraseña es: 123456
+
+- jose@test.com (Usuario normal)
+- maria@test.com (Usuario PREMIUM)
+- pablo@test.com (Usuario normal)
