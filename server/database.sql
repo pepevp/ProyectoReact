@@ -88,7 +88,7 @@ CREATE TABLE lista_compra (
 );
 
 -- ======================================================
--- 2. VISTAS Y PROCEDIMIENTOS
+-- 2. VISTAS
 -- ======================================================
 
 CREATE VIEW vista_recetas_disponibles AS
@@ -97,22 +97,44 @@ FROM recetas r
 CROSS JOIN usuarios u
 WHERE r.paquete_id IS NULL 
    OR r.usuario_id = u.id 
-   OR r.paquete_id IN (SELECT paquete_id FROM compras_usuarios WHERE usuario_id = u.id);
+   OR r.paquete_id IN (
+        SELECT paquete_id 
+        FROM compras_usuarios 
+        WHERE usuario_id = u.id
+   );
 
-CREATE PROCEDURE generar_lista_semanal(IN p_usuario_id INT, IN p_fecha_inicio DATE, IN p_fecha_fin DATE)
+-- ======================================================
+-- 3. PROCEDIMIENTO
+-- ======================================================
+
+DROP PROCEDURE IF EXISTS generar_lista_semanal;
+
+DELIMITER $$
+
+CREATE PROCEDURE generar_lista_semanal(
+    IN p_usuario_id INT, 
+    IN p_fecha_inicio DATE, 
+    IN p_fecha_fin DATE
+)
 BEGIN
-    DELETE FROM lista_compra WHERE usuario_id = p_usuario_id AND comprado = FALSE AND es_manual = FALSE;
+    DELETE FROM lista_compra 
+    WHERE usuario_id = p_usuario_id 
+      AND comprado = FALSE 
+      AND es_manual = FALSE;
+
     INSERT INTO lista_compra (usuario_id, ingrediente_id, cantidad_total, unidad, es_manual)
     SELECT ps.usuario_id, ir.ingrediente_id, SUM(ir.cantidad), ir.unidad, FALSE
     FROM planificacion_semanal ps
     JOIN ingredientes_receta ir ON ps.receta_id = ir.receta_id
-    WHERE ps.usuario_id = p_usuario_id AND ps.fecha BETWEEN p_fecha_inicio AND p_fecha_fin
+    WHERE ps.usuario_id = p_usuario_id 
+      AND ps.fecha BETWEEN p_fecha_inicio AND p_fecha_fin
     GROUP BY ir.ingrediente_id, ir.unidad;
-END;
+END $$
 
+DELIMITER ;
 
 -- ======================================================
--- 3. CARGA MASIVA DE DATOS
+-- 4. CARGA MASIVA DE DATOS
 -- ======================================================
 
 -- Categorías
@@ -138,28 +160,35 @@ INSERT INTO paquetes_recetas (nombre, descripcion, precio) VALUES
 ('Dieta Mediterránea', 'El clásico saludable.', 9.00);
 
 -- Compras
-INSERT INTO compras_usuarios (usuario_id, paquete_id) VALUES (1, 3), (2, 1);
+INSERT INTO compras_usuarios (usuario_id, paquete_id) VALUES 
+(1, 3), 
+(2, 1);
 
 -- Recetas
 INSERT INTO recetas (titulo, instrucciones, es_sistema, paquete_id) VALUES 
 ('Bowl de Avena y Miel', 'Mezclar avena con leche y añadir miel.', TRUE, NULL),
 ('Pollo con Arroz', 'Hacer el pollo a la plancha y cocer arroz.', TRUE, NULL),
-('Ensalada de Salmón', 'Salmón al horno sobre cama de espinacas.', TRUE, 1), -- Premium
+('Ensalada de Salmón', 'Salmón al horno sobre cama de espinacas.', TRUE, 1),
 ('Tostada de Aguacate', 'Pan con aguacate machacado y huevo.', TRUE, NULL),
 ('Tortilla de Espinacas', 'Saltear espinacas y cuajar con huevo.', TRUE, NULL),
 ('Pasta al Pesto', 'Cocer pasta y añadir salsa.', TRUE, NULL);
 
--- Ingredientes de Recetas (Vínculos)
--- Receta 1 (Avena): Avena(11), Leche(5), Miel(15)
-INSERT INTO ingredientes_receta VALUES (1, 11, 60, 'gramos'), (1, 5, 200, 'ml'), (1, 15, 10, 'gramos');
--- Receta 2 (Pollo): Pollo(1), Arroz(7), Cebolla(3)
-INSERT INTO ingredientes_receta VALUES (2, 1, 150, 'gramos'), (2, 7, 80, 'gramos'), (2, 3, 0.5, 'unidad');
--- Receta 4 (Tostada): Huevo(4), Aguacate(8)
-INSERT INTO ingredientes_receta VALUES (4, 4, 1, 'unidad'), (4, 8, 0.5, 'unidad');
+-- Ingredientes de Recetas
+INSERT INTO ingredientes_receta VALUES 
+(1, 11, 60, 'gramos'), 
+(1, 5, 200, 'ml'), 
+(1, 15, 10, 'gramos'),
 
--- Planificación (Simulamos una semana para Jose)
+(2, 1, 150, 'gramos'), 
+(2, 7, 80, 'gramos'), 
+(2, 3, 0.5, 'unidad'),
+
+(4, 4, 1, 'unidad'), 
+(4, 8, 0.5, 'unidad');
+
+-- Planificación semanal
 INSERT INTO planificacion_semanal (usuario_id, receta_id, fecha, tipo_comida) VALUES 
 (1, 1, '2026-02-16', 'desayuno'),
 (1, 2, '2026-02-16', 'almuerzo'),
 (1, 4, '2026-02-17', 'desayuno'),
-(1, 2, '2026-02-17', 'almuerzo'); -- Repite pollo para ver que suma cantidades en la lista
+(1, 2, '2026-02-17', 'almuerzo');
